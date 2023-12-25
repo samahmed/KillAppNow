@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">KillAppNow</string>
+    <string name="xposed_desc">Kill foreground app on "Back" button long-press.</string>
+</resources>
