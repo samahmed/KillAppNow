@@ -64,32 +64,23 @@ public class KillAppNow implements IXposedHookLoadPackage {
 
         mainHandler.post(() -> {
             try {
-                String mStrAppKilled = "Killed: ";
-                String mStrNothingToKill = "Nothing to kill.";
                 ActivityManager am = (ActivityManager) mContext.getSystemService(Context.ACTIVITY_SERVICE);
                 List<ActivityManager.RunningAppProcessInfo> processes = am.getRunningAppProcesses();
 
-                String targetKilled = null;
+                String foregroundApp = null;
                 for (ActivityManager.RunningAppProcessInfo processInfo : processes) {
-                    if (processInfo.importance == ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
-                            && !mKillIgnoreList.contains(processInfo.processName)) {
-                        targetKilled = processInfo.processName;
+                    if (processInfo.importance == ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND) {
+                        foregroundApp = processInfo.processName;
                         break;
                     }
                 }
 
-                if (targetKilled != null) {
-                    // Check if the target app is the launcher app
-                    String launcherPackage = getDefaultLauncherPackageName();
-                    if (!targetKilled.equals(launcherPackage)) {
-                        XposedHelpers.callMethod(am, "forceStopPackage", targetKilled);
-                        final String finalAppLabel = getApplicationLabel(targetKilled, mContext.getPackageManager());
-                        mainHandler.post(() -> Toast.makeText(mContext, mStrAppKilled + finalAppLabel, Toast.LENGTH_SHORT).show());
-                    } else {
-                        mainHandler.post(() -> Toast.makeText(mContext, mStrNothingToKill, Toast.LENGTH_SHORT).show());
-                    }
+                if (foregroundApp != null && !mKillIgnoreList.contains(foregroundApp) && !foregroundApp.equals(getDefaultLauncherPackageName())) {
+                    XposedHelpers.callMethod(am, "forceStopPackage", foregroundApp);
+                    String appLabel = getApplicationLabel(foregroundApp, mContext.getPackageManager());
+                    Toast.makeText(mContext, "Killed: " + appLabel, Toast.LENGTH_SHORT).show();
                 } else {
-                    mainHandler.post(() -> Toast.makeText(mContext, mStrNothingToKill, Toast.LENGTH_SHORT).show());
+                    Toast.makeText(mContext, "Nothing to kill.", Toast.LENGTH_SHORT).show();
                 }
             } catch (Throwable t) {
                 Log.e("KillAppNow", "Error in killForegroundApp", t);
